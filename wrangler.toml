@@ -1,0 +1,8 @@
+name = "sigflare"
+compatibility_date = "2026-02-21"
+main = "./dist/index.js"
+
+[vars]
+CLICKHOUSE_URL = "https://<CLICKHOUSE_HTTP_ENDPOINT>"
+CLICKHOUSE_DATABASE = "<CLICKHOUSE_DATABASE>"
+CLICKHOUSE_TABLE = "<CLICKHOUSE_TABLE>"
