@@ -12,6 +12,8 @@ const trackerJsHeaders = {
   'cache-control': 'no-store',
 }
 const localTrackerDevUrl = 'http://127.0.0.1:8788/sigflare-tracker.js'
+const collectPath = '/collect'
+const errorPath = '/error'
 const localHosts = new Set(['127.0.0.1', 'localhost'])
 
 function jsonResponse(body: Record<string, unknown>, status: number): Response {
@@ -70,7 +72,7 @@ export async function collect(request: Request, env: SigflareEnv, _ctx?: Runtime
     return trackerScriptResponse(request, env)
   }
 
-  if (requestUrl.pathname !== '/collect') {
+  if (requestUrl.pathname !== collectPath && requestUrl.pathname !== errorPath) {
     return safeTextHeaders('not_found', 404)
   }
 
@@ -101,8 +103,21 @@ export async function collect(request: Request, env: SigflareEnv, _ctx?: Runtime
   }
 
   const eventType = payload.event
-  if (eventType !== 'pv') {
-    return jsonResponse({ ok: false, error: 'only_pv_supported' }, 400)
+  if (eventType !== 'pv' && eventType !== 'fe_error') {
+    return jsonResponse({ ok: false, error: 'only_pv_and_fe_error_supported' }, 400)
+  }
+
+  if (eventType === 'pv' && requestUrl.pathname !== collectPath) {
+    return jsonResponse({ ok: false, error: 'pv_must_use_collect' }, 400)
+  }
+
+  if (eventType === 'fe_error' && requestUrl.pathname !== errorPath) {
+    return jsonResponse({ ok: false, error: 'fe_error_must_use_error' }, 400)
+  }
+
+  if (eventType === 'fe_error') {
+    console.error(`[sigflare] fe_error_received method=${request.method} path=${requestUrl.pathname} body=${bodyText}`)
+    return jsonResponse({ ok: true, event: String(eventType) }, 200)
   }
 
   console.log(`[sigflare] pv_received method=${request.method} path=${requestUrl.pathname} body=${bodyText}`)

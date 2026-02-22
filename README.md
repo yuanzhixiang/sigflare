@@ -29,7 +29,8 @@ pnpm run dev
 本地开发地址：
 
 - 采集脚本：`http://127.0.0.1:8787/sigflare-tracker.js`
-- 上报接口：`http://127.0.0.1:8787/collect`
+- PV 上报接口：`http://127.0.0.1:8787/collect`
+- 前端错误上报接口：`http://127.0.0.1:8787/error`
 
 构建产物：
 
@@ -65,7 +66,8 @@ ORDER BY (received_at, event_type, request_path)
 ## 路由设计
 
 - `GET /sigflare-tracker.js`：返回前端采集脚本（开发时读取实时编译产物）
-- `POST /collect`：接收事件并落库（目前仅支持 `event: "pv"`）
+- `POST /collect`：接收 `event: "pv"` 并打印日志
+- `POST /error`：接收 `event: "fe_error"` 并打印日志
 
 ## 端到端接入
 
@@ -98,11 +100,14 @@ ORDER BY (received_at, event_type, request_path)
 ```
 
 脚本会在页面加载时自动发送一次 `event: "pv"`。
-默认上报到脚本同域的 `/collect`（例如 `https://<worker-domain>/collect`）。
+默认上报规则：
+- `pv` -> 脚本同域 `/collect`（例如 `https://<worker-domain>/collect`）
+- `fe_error` -> 脚本同域 `/error`（例如 `https://<worker-domain>/error`）
+- 可选：通过 `data-sigflare-endpoint` 和 `data-sigflare-error-endpoint` 分别覆盖两个端点。
 
 ### 3) 部署后端 Worker
 
-`src/index.ts` 默认导出 Cloudflare Worker handler，并只处理 `POST /collect`：
+`src/index.ts` 默认导出 Cloudflare Worker handler，并处理 `POST /collect` 与 `POST /error`：
 
 ```ts
 export default { fetch: collect }
