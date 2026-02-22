@@ -1,0 +1,22 @@
+{
+  "name": "sigflare",
+  "compatibility_date": "2026-02-22",
+  "main": "dist/index.js",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "sigflare.yuanzhixiang.com",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "directory": "./dist/tracker",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "logs": {
+      "enabled": false,
+      "invocation_logs": true
+    }
+  }
+}
