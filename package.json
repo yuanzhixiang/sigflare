@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm dlx concurrently -k --names tracker-build,tracker-static,worker \"vite build -c vite.tracker.config.ts --watch\" \"pnpm dlx http-server dist/tracker -p 8788 -c-1\" \"pnpm dlx wrangler dev src/index.ts\"",
-    "build": "vite build -c vite.config.ts && vite build -c vite.tracker.config.ts"
+    "build": "vite build -c vite.config.ts && vite build -c vite.tracker.config.ts",
+    "deploy:prod": "pnpm run build && pnpm dlx wrangler deploy"
   },
   "keywords": [
     "cloudflare",

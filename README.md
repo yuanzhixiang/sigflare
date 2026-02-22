@@ -38,34 +38,15 @@ pnpm run dev
 pnpm run build
 ```
 
-## 环境变量
+生产部署（会先 build 再 deploy）：
 
-- `CLICKHOUSE_URL`：ClickHouse HTTP 接口地址（例如 `https://clickhouse.example.com:8443`）
-- `CLICKHOUSE_DATABASE`：数据库名
-- `CLICKHOUSE_TABLE`：表名
-- `CLICKHOUSE_USER`：可选，HTTP Basic 用户名
-- `CLICKHOUSE_PASSWORD`：可选，HTTP Basic 密码
-
-## ClickHouse 建表示例
-
-```sql
-CREATE TABLE IF NOT EXISTS default.sigflare_events (
-  event_type String,
-  received_at DateTime,
-  request_method String,
-  request_path String,
-  request_url String,
-  request_headers String,
-  request_query String,
-  request_body String,
-  event_payload String
-) ENGINE = MergeTree()
-ORDER BY (received_at, event_type, request_path)
+```bash
+pnpm run deploy:prod
 ```
 
 ## 路由设计
 
-- `GET /sigflare-tracker.js`：返回前端采集脚本（开发时读取实时编译产物）
+- `GET /sigflare-tracker.js`：返回前端采集脚本（开发时读取实时编译产物，生产从 Worker Assets 返回）
 - `POST /collect`：接收 `event: "pv"` 并打印日志
 - `POST /error`：接收 `event: "fe_error"` 并打印日志
 

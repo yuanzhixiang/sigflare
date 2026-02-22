@@ -1,8 +1,12 @@
 name = "sigflare"
-compatibility_date = "2026-02-21"
-main = "./dist/index.js"
+compatibility_date = "2026-02-22"
+main = "dist/index.js"
+workers_dev = false
 
-[vars]
-CLICKHOUSE_URL = "https://<CLICKHOUSE_HTTP_ENDPOINT>"
-CLICKHOUSE_DATABASE = "<CLICKHOUSE_DATABASE>"
-CLICKHOUSE_TABLE = "<CLICKHOUSE_TABLE>"
+[[routes]]
+pattern = "sigflare.yuanzhixiang.com"
+custom_domain = true
+
+[assets]
+directory = "./dist/tracker"
+binding = "ASSETS"

@@ -1,5 +1,9 @@
+type AssetFetcher = {
+  fetch: (request: Request | string, init?: RequestInit) => Promise<Response>
+}
+
 export type SigflareEnv = {
-  TRACKER_SCRIPT_URL?: string
+  ASSETS?: AssetFetcher
 }
 
 type RuntimeContext = {
@@ -11,7 +15,9 @@ const trackerJsHeaders = {
   'content-type': 'application/javascript; charset=utf-8',
   'cache-control': 'no-store',
 }
+
 const localTrackerDevUrl = 'http://127.0.0.1:8788/sigflare-tracker.js'
+const trackerPath = '/sigflare-tracker.js'
 const collectPath = '/collect'
 const errorPath = '/error'
 const localHosts = new Set(['127.0.0.1', 'localhost'])
@@ -30,45 +36,50 @@ function safeTextHeaders(message: string, status = 400): Response {
   })
 }
 
-function resolveTrackerScriptUrl(request: Request, env: SigflareEnv): string | null {
-  const fromEnv = env.TRACKER_SCRIPT_URL?.trim()
-  if (fromEnv && fromEnv.length > 0) {
-    return fromEnv
-  }
-
+function isLocalRequest(request: Request): boolean {
   const requestUrl = new URL(request.url)
-  if (localHosts.has(requestUrl.hostname)) {
-    return localTrackerDevUrl
-  }
-
-  return null
+  return localHosts.has(requestUrl.hostname)
 }
 
 async function trackerScriptResponse(request: Request, env: SigflareEnv): Promise<Response> {
-  const trackerScriptUrl = resolveTrackerScriptUrl(request, env)
-  if (!trackerScriptUrl) {
-    return safeTextHeaders('tracker_script_url_not_configured', 500)
-  }
+  if (isLocalRequest(request)) {
+    try {
+      const response = await fetch(localTrackerDevUrl)
+      if (!response.ok) {
+        return safeTextHeaders(`tracker_script_upstream_${response.status}`, 502)
+      }
 
-  try {
-    const response = await fetch(trackerScriptUrl)
-    if (!response.ok) {
-      return safeTextHeaders(`tracker_script_upstream_${response.status}`, 502)
+      return new Response(await response.text(), {
+        status: 200,
+        headers: trackerJsHeaders,
+      })
+    } catch {
+      return safeTextHeaders('tracker_script_upstream_network_error', 502)
     }
-
-    return new Response(await response.text(), {
-      status: 200,
-      headers: trackerJsHeaders,
-    })
-  } catch {
-    return safeTextHeaders('tracker_script_upstream_network_error', 502)
   }
+
+  if (!env.ASSETS) {
+    return safeTextHeaders('tracker_script_asset_binding_not_found', 500)
+  }
+
+  const assetRequest = new Request(new URL(trackerPath, request.url).toString(), request)
+  const assetResponse = await env.ASSETS.fetch(assetRequest)
+
+  if (assetResponse.ok) {
+    return assetResponse
+  }
+
+  if (assetResponse.status === 404) {
+    return safeTextHeaders('tracker_script_not_found', 404)
+  }
+
+  return safeTextHeaders(`tracker_script_asset_${assetResponse.status}`, 502)
 }
 
 export async function collect(request: Request, env: SigflareEnv, _ctx?: RuntimeContext): Promise<Response> {
   const requestUrl = new URL(request.url)
 
-  if (requestUrl.pathname === '/sigflare-tracker.js') {
+  if (requestUrl.pathname === trackerPath) {
     return trackerScriptResponse(request, env)
   }
 
