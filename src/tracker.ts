@@ -5,7 +5,7 @@ type SigflareTrackerWindow = Window & {
 }
 
 type SigflareEventPayload = {
-  event: 'pv' | 'fe_error'
+  event: 'pageview' | 'fe_error'
   url: string
   title: string
   referrer: string
@@ -48,7 +48,7 @@ function resolveEndpoints(script: HTMLScriptElement | null): { pvEndpoint: strin
   }
 }
 
-function createBasePayload(event: 'pv' | 'fe_error'): SigflareEventPayload {
+function createBasePayload(event: 'pageview' | 'fe_error'): SigflareEventPayload {
   return {
     event,
     url: location.href,
@@ -93,7 +93,7 @@ function sendPayload(endpoint: string, payload: SigflareEventPayload): void {
 }
 
 export function trackPageview(endpoint: string): void {
-  sendPayload(endpoint, createBasePayload('pv'))
+  sendPayload(endpoint, createBasePayload('pageview'))
 }
 
 function bindErrorReporting(endpoint: string): void {

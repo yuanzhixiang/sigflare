@@ -5,9 +5,15 @@
   "private": false,
   "type": "module",
   "scripts": {
-    "dev": "pnpm dlx concurrently -k --names tracker-build,tracker-static,worker \"vite build -c vite.tracker.config.ts --watch\" \"pnpm dlx http-server dist/tracker -p 8788 -c-1\" \"pnpm dlx wrangler dev src/index.ts\"",
-    "build": "vite build -c vite.config.ts && vite build -c vite.tracker.config.ts",
-    "deploy:prod": "pnpm run build && pnpm dlx wrangler deploy"
+    "set-env:dev": "cp .env.dev .env",
+    "set-env:main": "cp .env.main .env",
+    "dev": "pnpm run set-env:dev && pnpm dlx concurrently -k --names tracker-build,tracker-static,worker \"vite build -c vite.tracker.config.ts --watch\" \"pnpm dlx http-server dist/tracker -p 8788 -c-1\" \"pnpm dlx wrangler dev src/index.ts --env-file .env\"",
+    "build": "pnpm run set-env:main && pnpm run build:raw",
+    "build:raw": "vite build -c vite.config.ts && vite build -c vite.tracker.config.ts",
+    "deploy:prod": "pnpm run set-env:main && pnpm run build:raw && node scripts/deploy-with-vars.mjs .env.main",
+    "deploy:prod:dry-run": "pnpm run set-env:main && pnpm run build:raw && node scripts/deploy-with-vars.mjs .env.main --dry-run",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "cloudflare",
@@ -28,9 +34,10 @@
     ".": "./dist/index.js",
     "./tracker": "./dist/tracker/sigflare-tracker.js"
   },
-  "dependencies": {},
   "devDependencies": {
+    "jsdom": "^28.1.0",
     "typescript": "^5.6.3",
-    "vite": "^6.0.2"
+    "vite": "^6.0.2",
+    "vitest": "^4.0.18"
   }
 }
