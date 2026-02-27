@@ -154,4 +154,32 @@ describe('tracker', () => {
     expect(thirdPayload.user_id).toBe('user-123')
     expect(fetchMock).not.toHaveBeenCalled()
   })
+
+  it('does not send duplicate pageview when setUserId is called with same value', async () => {
+    const sendBeaconMock = vi.fn().mockReturnValue(true)
+    Object.defineProperty(window.navigator, 'sendBeacon', {
+      configurable: true,
+      value: sendBeaconMock,
+    })
+
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const script = document.createElement('script')
+    script.src = 'https://sigflare.yuanzhixiang.com/sigflare-tracker.js'
+    mockCurrentScript(script)
+
+    await importFreshTracker()
+
+    const sigflareApi = (window as { sigflare?: { setUserId?: (userId: string) => void } }).sigflare
+    sigflareApi?.setUserId?.('user-123')
+    sigflareApi?.setUserId?.('user-123')
+
+    expect(sendBeaconMock).toHaveBeenCalledTimes(2)
+    const [, secondBody] = sendBeaconMock.mock.calls[1] as [string, string]
+    const secondPayload = JSON.parse(secondBody) as Record<string, unknown>
+    expect(secondPayload.event).toBe('pageview')
+    expect(secondPayload.user_id).toBe('user-123')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
 })

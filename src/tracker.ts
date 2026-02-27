@@ -174,6 +174,10 @@ function bindPublicApi(trackerWindow: SigflareTrackerWindow, endpoints: { pvEndp
       return
     }
 
+    if (state.userId === normalizedUserId) {
+      return
+    }
+
     state.userId = normalizedUserId
     trackPageview(endpoints.pvEndpoint, state)
   }
