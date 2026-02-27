@@ -39,6 +39,7 @@ type UserAgentInfo = {
 type ClickHouseEventRow = {
   event_time: string
   event: string
+  user_id: string
   visitor_id: number
   session_id: number
   hostname: string
@@ -296,6 +297,7 @@ function buildEventRow(payload: Record<string, unknown>, request: Request, event
   const pageUrlRaw = asNonEmptyString(payload.url)
   const pageUrl = parseUrlOrNull(pageUrlRaw)
   const referrer = asNonEmptyString(payload.referrer)
+  const userId = asNonEmptyString(payload.user_id)
   const eventTimeMs = asTimestampMs(payload.created_at)
   const userAgent = request.headers.get('user-agent')?.trim() ?? ''
   const userAgentInfo = parseUserAgent(userAgent)
@@ -310,6 +312,7 @@ function buildEventRow(payload: Record<string, unknown>, request: Request, event
   return {
     event_time: toDateTime64Utc(eventTimeMs),
     event: eventType,
+    user_id: userId,
     visitor_id: visitorId,
     session_id: sessionId,
     hostname: pageUrl?.hostname || '',

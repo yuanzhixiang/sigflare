@@ -30,6 +30,7 @@ describe('collect', () => {
       title: 'Docs',
       referrer: 'https://google.com/search?q=sigflare',
       created_at: 1719250000000,
+      user_id: 'biz-user-001',
     })
 
     const response = await collect(request, {
@@ -51,6 +52,8 @@ describe('collect', () => {
 
     const row = JSON.parse(String(init.body).trim()) as Record<string, unknown>
     expect(row.event).toBe('pv')
+    expect(row.user_id).toBe('biz-user-001')
+    expect(row.visitor_id).toBeTypeOf('number')
     expect(row.hostname).toBe('example.com')
     expect(row.pathname).toBe('/docs')
     expect(row.utm_source).toBe('test')

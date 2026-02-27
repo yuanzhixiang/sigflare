@@ -86,6 +86,10 @@ pnpm run deploy:prod
 - `fe_error` -> 脚本同域 `/error`（例如 `https://<worker-domain>/error`）
 - 可选：通过 `data-sigflare-endpoint` 和 `data-sigflare-error-endpoint` 分别覆盖两个端点。
 
+可选：登录态就绪后可调用 `window.sigflare.setUserId(userId)`：
+- 后续事件会携带业务系统原始 `user_id`
+- 调用后会立即补发一次 `pv`
+
 ### 3) 部署后端 Worker
 
 `src/index.ts` 默认导出 Cloudflare Worker handler，并处理 `POST /collect` 与 `POST /error`：

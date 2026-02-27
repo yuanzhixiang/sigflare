@@ -4,10 +4,11 @@ CREATE TABLE `sigflare`.`events`
     `event_time`      DateTime64(3, 'UTC') CODEC (DoubleDelta, ZSTD(3)),
 
     `event`           LowCardinality(String),
-
-    -- 匿名访客与会话
     `visitor_id`      UInt64,
     `session_id`      UInt64,
+
+    -- 业务用户 + 匿名访客与会话
+    `user_id`         String CODEC (ZSTD(3)),
 
     -- 页面（建议 pathname 已经是规范化后的：去掉 query、统一尾斜杠策略等）
     `hostname`        LowCardinality(String) CODEC (ZSTD(3)),
