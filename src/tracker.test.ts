@@ -2,6 +2,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const originalConsoleError = console.error
+type SigflareApi = {
+  setUserId?: (userId: string) => void
+  track?: (event: string) => void
+}
 
 async function importFreshTracker(): Promise<void> {
   vi.resetModules()
@@ -100,7 +104,7 @@ describe('tracker', () => {
 
     await importFreshTracker()
 
-    const sigflareApi = (window as { sigflare?: { setUserId?: (userId: string) => void } }).sigflare
+    const sigflareApi = (window as { sigflare?: SigflareApi }).sigflare
     expect(sigflareApi?.setUserId).toBeTypeOf('function')
 
     sigflareApi?.setUserId?.('user-123')
@@ -138,7 +142,7 @@ describe('tracker', () => {
 
     await importFreshTracker()
 
-    const sigflareApi = (window as { sigflare?: { setUserId?: (userId: string) => void } }).sigflare
+    const sigflareApi = (window as { sigflare?: SigflareApi }).sigflare
     sigflareApi?.setUserId?.('user-123')
     console.error('boom')
 
@@ -171,7 +175,7 @@ describe('tracker', () => {
 
     await importFreshTracker()
 
-    const sigflareApi = (window as { sigflare?: { setUserId?: (userId: string) => void } }).sigflare
+    const sigflareApi = (window as { sigflare?: SigflareApi }).sigflare
     sigflareApi?.setUserId?.('user-123')
     sigflareApi?.setUserId?.('user-123')
 
@@ -180,6 +184,59 @@ describe('tracker', () => {
     const secondPayload = JSON.parse(secondBody) as Record<string, unknown>
     expect(secondPayload.event).toBe('pageview')
     expect(secondPayload.user_id).toBe('user-123')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('binds track and sends custom event to /collect', async () => {
+    const sendBeaconMock = vi.fn().mockReturnValue(true)
+    Object.defineProperty(window.navigator, 'sendBeacon', {
+      configurable: true,
+      value: sendBeaconMock,
+    })
+
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const script = document.createElement('script')
+    script.src = 'https://sigflare.yuanzhixiang.com/sigflare-tracker.js'
+    mockCurrentScript(script)
+
+    await importFreshTracker()
+
+    const sigflareApi = (window as { sigflare?: SigflareApi }).sigflare
+    expect(sigflareApi?.track).toBeTypeOf('function')
+
+    sigflareApi?.track?.('signup_click')
+
+    expect(sendBeaconMock).toHaveBeenCalledTimes(2)
+    const [endpoint, body] = sendBeaconMock.mock.calls[1] as [string, string]
+    expect(endpoint).toBe('https://sigflare.yuanzhixiang.com/collect')
+
+    const payload = JSON.parse(body) as Record<string, unknown>
+    expect(payload.event).toBe('signup_click')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does not send event when track is called with empty event name', async () => {
+    const sendBeaconMock = vi.fn().mockReturnValue(true)
+    Object.defineProperty(window.navigator, 'sendBeacon', {
+      configurable: true,
+      value: sendBeaconMock,
+    })
+
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const script = document.createElement('script')
+    script.src = 'https://sigflare.yuanzhixiang.com/sigflare-tracker.js'
+    mockCurrentScript(script)
+
+    await importFreshTracker()
+
+    const sigflareApi = (window as { sigflare?: SigflareApi }).sigflare
+    sigflareApi?.track?.('   ')
+
+    expect(sendBeaconMock).toHaveBeenCalledTimes(1)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })

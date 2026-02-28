@@ -7,6 +7,7 @@ type SigflareTrackerWindow = Window & {
 
 type SigflarePublicApi = {
   setUserId: (userId: string) => void
+  track: (event: string) => void
 }
 
 type TrackerRuntimeState = {
@@ -14,7 +15,7 @@ type TrackerRuntimeState = {
 }
 
 type SigflareEventPayload = {
-  event: 'pageview' | 'fe_error'
+  event: string
   url: string
   title: string
   referrer: string
@@ -58,7 +59,7 @@ function resolveEndpoints(script: HTMLScriptElement | null): { pvEndpoint: strin
   }
 }
 
-function createBasePayload(event: 'pageview' | 'fe_error', state: TrackerRuntimeState): SigflareEventPayload {
+function createBasePayload(event: string, state: TrackerRuntimeState): SigflareEventPayload {
   return {
     event,
     url: location.href,
@@ -106,6 +107,16 @@ function sendPayload(endpoint: string, payload: SigflareEventPayload): void {
 export function trackPageview(endpoint: string, state?: TrackerRuntimeState): void {
   const runtimeState = state ?? {}
   sendPayload(endpoint, createBasePayload('pageview', runtimeState))
+}
+
+function trackEvent(endpoint: string, event: string, state?: TrackerRuntimeState): void {
+  const normalizedEvent = event.trim()
+  if (normalizedEvent.length === 0) {
+    return
+  }
+
+  const runtimeState = state ?? {}
+  sendPayload(endpoint, createBasePayload(normalizedEvent, runtimeState))
 }
 
 function bindErrorReporting(endpoint: string, state: TrackerRuntimeState): void {
@@ -166,7 +177,9 @@ function bindConsoleErrorReporting(endpoint: string, state: TrackerRuntimeState)
 function bindPublicApi(trackerWindow: SigflareTrackerWindow, endpoints: { pvEndpoint: string }, state: TrackerRuntimeState): void {
   const existingApi = trackerWindow.sigflare
   const sigflareApi: SigflarePublicApi =
-    existingApi && typeof existingApi === 'object' ? existingApi : ({ setUserId: () => {} } as SigflarePublicApi)
+    existingApi && typeof existingApi === 'object'
+      ? existingApi
+      : ({ setUserId: () => {}, track: () => {} } as SigflarePublicApi)
 
   sigflareApi.setUserId = (userId: string) => {
     const normalizedUserId = userId.trim()
@@ -180,6 +193,10 @@ function bindPublicApi(trackerWindow: SigflareTrackerWindow, endpoints: { pvEndp
 
     state.userId = normalizedUserId
     trackPageview(endpoints.pvEndpoint, state)
+  }
+
+  sigflareApi.track = (event: string) => {
+    trackEvent(endpoints.pvEndpoint, event, state)
   }
 
   trackerWindow.sigflare = sigflareApi

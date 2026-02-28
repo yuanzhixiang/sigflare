@@ -47,7 +47,7 @@ pnpm run deploy:prod
 ## 路由设计
 
 - `GET /sigflare-tracker.js`：返回前端采集脚本（开发时读取实时编译产物，生产从 Worker Assets 返回）
-- `POST /collect`：接收 `event: "pv"` 并打印日志
+- `POST /collect`：接收页面浏览与主动事件并写入 ClickHouse
 - `POST /error`：接收 `event: "fe_error"` 并打印日志
 
 ## 端到端接入
@@ -89,6 +89,11 @@ pnpm run deploy:prod
 可选：登录态就绪后可调用 `window.sigflare.setUserId(userId)`：
 - 后续事件会携带业务系统原始 `user_id`
 - 调用后会立即补发一次 `pv`
+
+可选：主动上报业务事件可调用 `window.sigflare.track(event)`：
+- `event` 必须是非空字符串
+- 事件会发送到 `/collect`
+- 自动携带 `url`、`title`、`referrer`、`created_at`，以及已设置的 `user_id`
 
 ### 3) 部署后端 Worker
 
